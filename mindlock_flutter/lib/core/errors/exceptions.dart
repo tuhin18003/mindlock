@@ -1,0 +1,59 @@
+class ServerException implements Exception {
+  final String message;
+  final int? statusCode;
+  final Map<String, dynamic>? errors;
+
+  const ServerException({required this.message, this.statusCode, this.errors});
+
+  @override
+  String toString() => 'ServerException: $message (status: $statusCode)';
+}
+
+class NetworkException implements Exception {
+  final String message;
+  const NetworkException({this.message = 'No internet connection'});
+
+  @override
+  String toString() => 'NetworkException: $message';
+}
+
+class AuthException implements Exception {
+  final String message;
+  const AuthException({required this.message});
+
+  @override
+  String toString() => 'AuthException: $message';
+}
+
+class UnauthorizedException implements Exception {
+  const UnauthorizedException();
+
+  @override
+  String toString() => 'UnauthorizedException: Session expired';
+}
+
+class CacheException implements Exception {
+  final String message;
+  const CacheException({required this.message});
+
+  @override
+  String toString() => 'CacheException: $message';
+}
+
+class ValidationException implements Exception {
+  final String message;
+  final Map<String, List<String>>? errors;
+
+  const ValidationException({required this.message, this.errors});
+
+  @override
+  String toString() => 'ValidationException: $message';
+}
+
+class PermissionDeniedException implements Exception {
+  final String permission;
+  const PermissionDeniedException({required this.permission});
+
+  @override
+  String toString() => 'PermissionDeniedException: $permission access denied';
+}
