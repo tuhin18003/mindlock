@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\AdminUserResource;
 use App\Models\AdminAuditLog;
 use App\Models\User;
 use App\Services\EntitlementResolver;
@@ -25,7 +26,7 @@ class UserManagementController extends Controller
             ->orderByDesc('created_at')
             ->paginate($request->per_page ?? 25);
 
-        return response()->json(['success' => true, 'data' => $users]);
+        return response()->json(['success' => true, 'data' => AdminUserResource::collection($users)]);
     }
 
     public function show(User $user): JsonResponse

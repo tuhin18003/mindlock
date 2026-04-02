@@ -159,4 +159,90 @@ class AdminAnalyticsController extends Controller
 
         return response()->json(['success' => true, 'data' => $byType]);
     }
+
+    /**
+     * GET /admin/analytics/entitlements
+     * Entitlement source breakdown and Pro adoption trend.
+     */
+    public function entitlementAnalytics(Request $request): JsonResponse
+    {
+        $from = Carbon::parse($request->from ?? now()->subDays(30));
+        $to   = Carbon::parse($request->to ?? now());
+
+        $bySource = DB::table('entitlements')
+            ->select('source', DB::raw('COUNT(*) as count'))
+            ->groupBy('source')
+            ->orderByDesc('count')
+            ->get();
+
+        $byStatus = DB::table('entitlements')
+            ->where('tier', 'pro')
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->get();
+
+        $grantsTrend = DB::table('entitlements')
+            ->where('tier', 'pro')
+            ->whereBetween('created_at', [$from, $to])
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as count'))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $totalPro  = DB::table('entitlements')->where('tier', 'pro')->where('status', 'active')->count();
+        $totalFree = DB::table('users')->where('status', 'active')->count() - $totalPro;
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'total_pro_active'   => $totalPro,
+                'total_free'         => max(0, $totalFree),
+                'pro_adoption_rate'  => ($totalPro + $totalFree) > 0
+                    ? round($totalPro / ($totalPro + $totalFree) * 100, 2)
+                    : 0,
+                'by_source'          => $bySource,
+                'by_status'          => $byStatus,
+                'grants_trend'       => $grantsTrend,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /admin/analytics/risk
+     * Risk signals — suspicious unlock patterns, heavy emergency users.
+     */
+    public function riskAnalytics(Request $request): JsonResponse
+    {
+        $from = Carbon::parse($request->from ?? now()->subDays(30));
+        $to   = Carbon::parse($request->to ?? now());
+
+        // Users with high emergency unlock rates
+        $heavyEmergencyUsers = DB::table('emergency_unlocks')
+            ->select('user_id', DB::raw('COUNT(*) as count'))
+            ->whereBetween('used_at', [$from, $to])
+            ->groupBy('user_id')
+            ->having('count', '>=', 5)
+            ->orderByDesc('count')
+            ->limit(20)
+            ->get();
+
+        // Users with high relock rates (keep relocking within 10 minutes)
+        $relockHeavyUsers = DB::table('unlock_events')
+            ->select('user_id', DB::raw('COUNT(*) as count'))
+            ->where('relocked', true)
+            ->whereBetween('unlocked_at', [$from, $to])
+            ->groupBy('user_id')
+            ->having('count', '>=', 5)
+            ->orderByDesc('count')
+            ->limit(20)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'heavy_emergency_users' => $heavyEmergencyUsers,
+                'heavy_relock_users'    => $relockHeavyUsers,
+            ],
+        ]);
+    }
 }

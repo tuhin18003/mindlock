@@ -1,11 +1,14 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\SyncController;
-use App\Http\Controllers\Api\V1\EntitlementController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
-use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\AppsController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ChallengesController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\EntitlementController;
+use App\Http\Controllers\Api\V1\HistoryController;
+use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -68,5 +71,36 @@ Route::prefix('v1')->group(function () {
 
         // Analytics event ingest
         Route::post('/analytics/events', [AnalyticsController::class, 'ingest']);
+
+        // Challenges
+        Route::prefix('challenges')->group(function () {
+            Route::get('/',                  [ChallengesController::class, 'index']);
+            Route::get('/categories',        [ChallengesController::class, 'categories']);
+            Route::get('/for-intervention',  [ChallengesController::class, 'forIntervention']);
+            Route::get('/{challenge}',       [ChallengesController::class, 'show']);
+        });
+
+        // Apps / Limits configuration
+        Route::prefix('apps')->group(function () {
+            Route::get('/',                           [AppsController::class, 'index']);
+            Route::get('/limits',                     [AppsController::class, 'limits']);
+            Route::get('/config',                     [AppsController::class, 'deviceConfig']);
+            Route::put('/{packageName}/limit',        [AppsController::class, 'setLimit'])
+                ->where('packageName', '.+');
+            Route::delete('/{packageName}/limit',     [AppsController::class, 'removeLimit'])
+                ->where('packageName', '.+');
+            Route::put('/{packageName}/lock',         [AppsController::class, 'toggleLock'])
+                ->where('packageName', '.+');
+        });
+
+        // History
+        Route::prefix('history')->group(function () {
+            Route::get('/activity',          [HistoryController::class, 'activity']);
+            Route::get('/locks',             [HistoryController::class, 'locks']);
+            Route::get('/challenges',        [HistoryController::class, 'challenges']);
+            Route::get('/focus',             [HistoryController::class, 'focus']);
+            Route::get('/emergency-unlocks', [HistoryController::class, 'emergencyUnlocks']);
+            Route::get('/stats',             [HistoryController::class, 'stats']);
+        });
     });
 });
