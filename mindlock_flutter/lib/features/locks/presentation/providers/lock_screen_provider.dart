@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../data/local/database/database_provider.dart';
 import '../../../../services/tracking/usage_tracker_service.dart';
 
 part 'lock_screen_provider.freezed.dart';
@@ -49,16 +50,22 @@ class LockScreenStateNotifier extends _$LockScreenStateNotifier {
   @override
   Future<LockScreenState> build(String packageName) async {
     final tracker = ref.read(usageTrackerServiceProvider);
+    final db = ref.read(appDatabaseProvider);
     final usedSeconds = await tracker.getUsageSecondsToday(packageName);
-    final limitSeconds = 30 * 60; // TODO: load from monitored apps config
+
+    // Load actual limit from local monitored_apps table
+    final monitoredApp = await db.monitoredAppsDao.getByPackage(packageName);
+    final limitMinutes = monitoredApp?.dailyLimitMinutes ?? 30;
+    final limitSeconds = limitMinutes * 60;
+    final strictMode = monitoredApp?.strictMode ?? false;
 
     return LockScreenState(
       packageName: packageName,
-      appName: _getAppName(packageName),
+      appName: monitoredApp?.appName ?? _getAppName(packageName),
       usedSeconds: usedSeconds,
       limitSeconds: limitSeconds,
-      strictMode: false,
-      canUseEmergencyUnlock: true,
+      strictMode: strictMode,
+      canUseEmergencyUnlock: !strictMode,
       recoveredMinutesToday: 0,
       motivationalMessage: _getMotivationalMessage(packageName),
       availableMethods: _buildAvailableMethods(),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/local/database/app_database.dart';
+import '../../data/local/database/database_provider.dart';
 import '../entitlement/entitlement_service.dart';
 
 part 'analytics_service.g.dart';

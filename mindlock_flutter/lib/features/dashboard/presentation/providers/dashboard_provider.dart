@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../data/local/database/database_provider.dart';
 import '../../../../services/tracking/usage_tracker_service.dart';
 
 part 'dashboard_provider.freezed.dart';
@@ -37,25 +38,39 @@ class WeeklyDataPoint with _$WeeklyDataPoint {
 @riverpod
 Future<DashboardSummary> dashboardSummary(Ref ref) async {
   final tracker = ref.read(usageTrackerServiceProvider);
+  final db = ref.read(appDatabaseProvider);
   final today = DateTime.now();
-  final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
+  String dateStr(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  final todayStr = dateStr(today);
   final summary = await tracker.getDailySummary(todayStr);
 
-  // Generate last 7 days trend (placeholder data for now)
-  final weeklyTrend = List.generate(7, (i) {
-    final d = today.subtract(Duration(days: 6 - i));
-    return WeeklyDataPoint(
-      date: '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
-      screenSeconds: 0,
-      recoveredMinutes: 0,
-    );
-  });
+  // Build real 7-day weekly trend from local usage_logs
+  final List<WeeklyDataPoint> weeklyTrend = [];
+  for (int i = 6; i >= 0; i--) {
+    final d = today.subtract(Duration(days: i));
+    final ds = dateStr(d);
+    final logs = await db.usageLogsDao.getLogsForDate(ds);
+    final screenSeconds = logs.fold<int>(0, (s, l) => s + l.usageSeconds);
+    weeklyTrend.add(WeeklyDataPoint(
+      date: ds,
+      screenSeconds: screenSeconds,
+      recoveredMinutes: 0, // enhanced when unlock events are synced
+    ));
+  }
+
+  // Count today's lock events from local DB
+  final todayLocks = await db.lockEventsDao.getUnsynced();
+  final lockCountToday = todayLocks
+      .where((e) => dateStr(e.lockedAt) == todayStr)
+      .length;
 
   return DashboardSummary(
     screenTimeSeconds: summary.totalScreenSeconds,
     recoveredMinutes: 0,
-    lockCount: 0,
+    lockCount: lockCountToday,
     focusMinutes: 0,
     recoveryScore: 0,
     currentStreak: 0,

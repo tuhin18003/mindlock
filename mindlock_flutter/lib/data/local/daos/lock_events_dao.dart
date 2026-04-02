@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/tables/lock_events_table.dart';
+import '../database/tables/unlock_events_table.dart';
 
 part 'lock_events_dao.g.dart';
 

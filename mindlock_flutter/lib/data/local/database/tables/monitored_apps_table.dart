@@ -7,6 +7,9 @@ class MonitoredAppsTable extends Table {
   TextColumn get packageName => text()();
   TextColumn get appName => text()();
   TextColumn get category => text().nullable()();
+  IntColumn get dailyLimitMinutes => integer().nullable()();
+  IntColumn get weekdayLimitMinutes => integer().nullable()();
+  IntColumn get weekendLimitMinutes => integer().nullable()();
   BoolColumn get isTracked => boolean().withDefault(const Constant(true))();
   BoolColumn get isLocked => boolean().withDefault(const Constant(false))();
   BoolColumn get strictMode => boolean().withDefault(const Constant(false))();

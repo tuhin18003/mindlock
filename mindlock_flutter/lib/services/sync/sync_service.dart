@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'dart:convert';
 import '../../data/local/database/app_database.dart';
+import '../../data/local/database/database_provider.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/constants/storage_keys.dart';
 import '../storage/prefs_service.dart';
 import '../storage/secure_storage_service.dart';
@@ -148,9 +150,21 @@ class SyncService {
   }
 
   Future<void> _postToApi(String endpoint, Map<String, dynamic> data) async {
-    // Direct HTTP call using stored auth token
-    // In production this would use the Dio client from the DI container
-    // For now this is a placeholder — will be wired in Phase 3 implementation
+    final token = await _secureStorage.read(StorageKeys.accessToken);
+    if (token == null) return; // Not authenticated — skip sync
+
+    final dio = Dio(BaseOptions(
+      baseUrl: AppConstants.apiBaseUrlDev,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      connectTimeout: const Duration(milliseconds: AppConstants.connectTimeout),
+      receiveTimeout: const Duration(milliseconds: AppConstants.receiveTimeout),
+    ));
+
+    await dio.post(endpoint, data: data);
   }
 
   Future<String> _getDeviceId() async {

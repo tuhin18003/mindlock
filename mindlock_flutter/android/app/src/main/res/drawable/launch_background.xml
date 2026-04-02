@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MindLock splash background — matches AppColors.black (#0A0A0F) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#0A0A0F"/>
+        </shape>
+    </item>
+</layer-list>
