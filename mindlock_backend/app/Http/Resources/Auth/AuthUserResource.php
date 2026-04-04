@@ -20,7 +20,7 @@ class AuthUserResource extends JsonResource
             'status'              => $this->status,
             'last_active_at'      => $this->last_active_at?->toIso8601String(),
             'created_at'          => $this->created_at->toIso8601String(),
-            'roles'               => $this->getRoleNames()->values(),
+            'roles'               => $this->getRoleNames()->map(fn($name) => ['name' => $name])->values(),
         ];
     }
 }
